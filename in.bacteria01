@@ -1,0 +1,91 @@
+#this is the first version of bacteria_land_on_grids simulation
+#use rigid particle, 2D simulation box
+#bounce back if particle hit on the wall
+#under lj potential only
+
+units		lj
+atom_style	atomic
+dimension	2
+
+boundary p p p
+# how can i set a reflect back boundary
+#there is a fix wall/reflect command later on
+atom_style atomic
+
+region	swimming block -20.0 20.0 -20.0 20.0 -0.25 0.25 units box
+create_box	1 swimming
+#redefine a simulation box?
+create_atoms	1 random 30 40890 NULL
+#random atoms
+#other ways to create atoms
+
+#set the parameter of atoms
+#set
+
+mass * 1
+#cause now use the lj unit, mass is 1
+#velocity all create 1.0 40 dist gaussian
+
+
+neighbor 0.3 bin
+#0.3 sigma + cutoff distance
+
+#force field
+pair_style lj/cut 2.5
+#2.5 is the cutoff
+pair_coeff * * 1 2. 2.5
+# * * means all i, j pairs have the same lj potential
+#will it calculated properly for everytime step?
+#1 as distance unit will mean 1 sigma distance
+#epsilon(energy unit) sigma(distance units) cutoff
+#cutoff normally is 2.5sigma
+
+thermo_style custom step pe ke etotal press vol
+velocity all zero linear
+fix NVE all nve
+minimize	1e-8	1e-8	10000	10000
+unfix NVE
+#I don't know what this meant
+
+#run_style verlet
+#by default velocity-verlet
+# We thus recommend the following settings
+#for use of the respa style without SHAKE in biomolecular simulations:
+#timestep  4.0
+#run_style respa 4 2 2 2 inner 2 4.5 6.0 middle 3 8.0 10.0 outer 4
+
+
+#do i need more fit?
+#fix wall all wall/reflect xlo EDGE xhi EDGE ylo EDGE yhi EDGE
+# there are default value of timesteps
+
+variable integration_timestep equal 0.0005
+timestep ${integration_timestep}
+variable Tdamp equal 100*${integration_timestep}
+fix NVT all nvt temp 1.0 1.0 ${Tdamp}
+fix 3 all enforce2d
+run 20000
+#what's the meaning of this?
+unfix NVT
+
+
+fix NVE all nve
+fix 3 all enforce2d
+#try to plot the pictures/ make a video
+#dump dv all movie 500 dump.mpg type type size 640 480
+#dump_modify dv pad 5 adiam * 2.0
+
+dump dI all image 200 Image.*.jpg type type size 640 480
+dump_modify	dI pad 5 adiam * 2.0
+
+thermo_style custom step pe ke etotal press vol
+thermo 1000
+#output and print the thermodynamic info
+
+#compute 1 all temp
+
+#restart 100 run_a.rest run_b.rest
+
+run 50000
+
+#write_restart rlx_0.5_LJ17.rest
