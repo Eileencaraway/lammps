@@ -1,0 +1,15 @@
+LAMMPS Description
+ 
+        0  atoms
+        0  bonds
+ 
+        1  atom types
+ 
+ 0	100 xlo xhi
+ 0	100 ylo yhi
+ 0	100 zlo zhi
+ 
+Masses
+ 
+  1 1
+ 

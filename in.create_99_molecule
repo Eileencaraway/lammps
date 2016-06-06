@@ -1,0 +1,39 @@
+variable        Nbeads  equal   10 #number of particles that make up a bacteria
+variable        Na      equal   atoms #number of atoms in the system
+#     variable        Natoms  equal   ${Na} # this is the number of atoms currently in the simulation
+      variable        Nmol    equal   ${Na}/${Nbeads} #this is the number of molecules currently in the simulation
+      #distance between the center of the particles that make up a bacteria
+      variable        Rbond   equal   ${LL}/((${Nbeads}-1))
+      variable        n       equal   0
+      variable        yy      equal   floor(${Nmol}/99)
+
+
+variable	xs	equal	0
+variable	ys	equal	${yy}
+variable	zs	equal	${Nmol}+1-${yy}*99 #in order to avoid overlap with boundary
+
+      label   LOOP_CREATION
+              variable        pos_x   equal   ${xs}+${Rbond}*${n}
+              variable        pos_y   equal   ${ys}
+              variable        pos_z   equal   ${zs}
+              create_atoms    1 single ${pos_x}         ${pos_y}      ${pos_z}
+              variable        n       equal   ${n}+1
+              if "${n} < ${Nbeads}" then "jump in.create_molecule_ordered LOOP_CREATION"
+ variable	last_added	equal	${Na}-${Nbeads}
+       group  added id > ${last_added} # select all particles that have been added, i.e. the particles of the last molecule
+       variable       Nmol    equal   ${Nmol}+1 # this is the index of the new molecule
+ set group added mol ${Nmol}
+   velocity added create ${Temperature} ${Nmol}
+
+#         variable	seed	equal	${Nmol}
+#	 variable	theta_z equal random(0,3.14,${seed})
+#         variable	seed	equal	${Nmol}*10
+#	 variable	theta_y equal random(0,3.14,${seed})
+#         variable	seed	equal	${Nmol}*15
+#	 variable	theta_x equal random(0,3.14,${seed})
+#	 displace_atoms added rotate 0 0 0 0 0 1 ${theta_z}
+#	 displace_atoms added rotate 0 0 0 0 1 0 ${theta_y}
+#	 displace_atoms added rotate 0 0 0 1 0 0 ${theta_x}
+#         variable	rand	equal	random(-100,100,${seed})
+#	 displace_atoms added move ${rand} ${rand} ${rand}
+ group added delete

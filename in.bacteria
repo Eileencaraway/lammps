@@ -1,0 +1,77 @@
+
+#log	none
+
+# linear size of a bacteria
+variable	LL	equal	5
+#diameter of a bead
+variable	Diameter	equal	1  #this will be the approximate width of a rod/bacteria
+variable	Temperature	equal	0.5
+
+dimension	3
+boundary	p p f
+
+atom_style	bond #nned to be bond as we define molecules
+neighbor	0.3 bin
+neigh_modify	delay 5
+
+lattice		sc	1
+units 		lj
+variable	dt_integration	equal	0.001
+timestep  	${dt_integration}
+variable        Tdamping        equal 100*${dt_integration}
+
+
+#read a datafile; the datafile only specify the system size, and the number of atom types
+# we could actually use a create box here - perhaps it is simpler
+read_data	in.datafile
+
+#interaction between the particles (od different bacteria), we use a truncated LJ as a try
+variable	eps_particles		equal	1
+variable	cut_particles		equal	${Diameter}
+variable	sigma_particles		equal	${cut_particles}/2^(1.0/6)*1.01
+pair_style      lj/cut  ${Diameter}
+pair_coeff      1 1 ${eps_particles} ${sigma_particles} ${cut_particles}
+pair_modify	shift	yes
+
+#interaction with the bottom, we assume to be a flat surface
+variable	eps_bottom	equal	1
+variable	cut_bottom	equal	${Diameter}/2
+variable	sigma_bottom	equal	${cut_bottom}/2^(1.0/6)
+fix bottom all wall/lj126 zlo 0.0 ${eps_bottom} ${sigma_bottom} ${cut_bottom} zhi 100.0 ${eps_bottom} ${sigma_bottom} ${cut_bottom}
+
+#log log.lammps
+thermo_style	custom step atoms temp pe ke press
+thermo		100
+
+#when number of molecule less than 99
+variable	num_mol	equal	50
+label	CREATE_MOL
+#	include in.create_molecule
+	include in.create_molecule_ordered
+	if "${Nmol} < ${num_mol}" then "jump SELF CREATE_MOL"
+
+
+#when number of molecule larger than 99, add 99 molecule each time
+#variable num_layer loop 5
+#label CREATE_MOREs
+#include in.create_99_molecule
+#if "${yy} < ${num_layer}" then "jump in.bacteria CREATE_MOREs"
+
+
+variable	Temperature	equal	100
+fix	NVT all rigid/nvt/small molecule temp ${Temperature}	${Temperature}	${Tdamping}
+run 100000
+unfix NVT
+
+#dump WRITE all custom 1 dumpfile.txt id x y z
+#dump_modify WRITE sort id
+#run	0
+#undump	WRITE
+
+fix	NVE all rigid/nve/small molecule
+
+dump		2 all image 1000 image.*.jpg type type &
+		axes yes 0.8 0.02 view 80 -30
+dump_modify	2 pad 5
+
+run	20000
